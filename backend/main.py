@@ -4,6 +4,7 @@ import os
 import secrets
 from datetime import datetime, timezone
 
+import bcrypt
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, jwt_required
@@ -37,7 +38,7 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False, index=True)
-    password = db.Column(db.String(255), nullable=False)  # Plain text on purpose (MVP request)
+    password = db.Column(db.String(255), nullable=False)  # Stores bcrypt hash
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
 
     polls = db.relationship("Poll", backref="owner", lazy=True, cascade="all, delete-orphan")
@@ -86,6 +87,21 @@ class VoteSelection(db.Model):
     vote_id = db.Column(db.Integer, db.ForeignKey("votes.id"), nullable=False, index=True)
     date = db.Column(db.String(32), nullable=False)
     value = db.Column(db.String(16), nullable=False)  # yes | no | maybe
+
+
+def is_bcrypt_hash(password_value: str) -> bool:
+    return password_value.startswith("$2a$") or password_value.startswith("$2b$") or password_value.startswith("$2y$")
+
+
+def hash_password(plain_password: str) -> str:
+    return bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verify_password(plain_password: str, stored_password: str) -> bool:
+    if is_bcrypt_hash(stored_password):
+        return bcrypt.checkpw(plain_password.encode("utf-8"), stored_password.encode("utf-8"))
+    # Backward-compatible fallback for already existing plaintext users.
+    return plain_password == stored_password
 
 
 def serialize_poll_public(poll: Poll) -> dict:
@@ -145,7 +161,7 @@ def seed_sample_data() -> None:
     if User.query.filter_by(username="demo").first():
         return
 
-    demo_user = User(username="demo", password="demo123")
+    demo_user = User(username="demo", password=hash_password("demo123"))
     db.session.add(demo_user)
     db.session.flush()
 
@@ -206,7 +222,7 @@ def register():
     if User.query.filter_by(username=username).first():
         return jsonify({"error": "username already exists"}), 409
 
-    user = User(username=username, password=password)
+    user = User(username=username, password=hash_password(password))
     db.session.add(user)
     db.session.commit()
     return jsonify({"id": user.id, "username": user.username}), 201
@@ -219,8 +235,13 @@ def login():
     password = (payload.get("password") or "").strip()
 
     user = User.query.filter_by(username=username).first()
-    if not user or user.password != password:
+    if not user or not verify_password(password, user.password):
         return jsonify({"error": "invalid credentials"}), 401
+
+    if not is_bcrypt_hash(user.password):
+        # Transparent migration for older plaintext rows.
+        user.password = hash_password(password)
+        db.session.commit()
 
     token = create_access_token(identity=str(user.id))
     return jsonify({"access_token": token, "user": {"id": user.id, "username": user.username}}), 200
