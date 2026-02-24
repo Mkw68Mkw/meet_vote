@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Stepper } from "@/components/stepper"
+import { HeaderAuthControls } from "@/components/header-auth-controls"
 import { Calendar, ArrowLeft, ArrowRight, Plus, X, Copy, Check, ExternalLink } from "lucide-react"
 import { toast } from "sonner"
 import { savePoll, generateId } from "@/lib/storage"
@@ -117,6 +118,7 @@ export default function CreatePollPage() {
             </div>
             <span className="font-semibold text-xl text-foreground">MeetVote</span>
           </Link>
+          <HeaderAuthControls />
         </div>
       </header>
 

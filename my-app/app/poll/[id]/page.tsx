@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { VoteTable } from "@/components/vote-table"
 import { VoteToggle } from "@/components/vote-toggle"
+import { HeaderAuthControls } from "@/components/header-auth-controls"
 import { Calendar, Copy, Check, Share2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
 import { getPoll, addVoteToPoll } from "@/lib/storage"
@@ -243,9 +244,7 @@ function Header() {
           </div>
           <span className="font-semibold text-xl text-foreground">MeetVote</span>
         </Link>
-        <Link href="/create">
-          <Button size="sm">Neue Umfrage</Button>
-        </Link>
+        <HeaderAuthControls />
       </div>
     </header>
   )

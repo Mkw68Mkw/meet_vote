@@ -4,6 +4,7 @@ import React from "react"
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { HeaderAuthControls } from "@/components/header-auth-controls"
 import { Calendar, Users, Zap, CheckCircle2 } from "lucide-react"
 
 export default function HomePage() {
@@ -18,9 +19,7 @@ export default function HomePage() {
             </div>
             <span className="font-semibold text-xl text-foreground">MeetVote</span>
           </Link>
-          <Link href="/create">
-            <Button size="sm">Umfrage erstellen</Button>
-          </Link>
+          <HeaderAuthControls />
         </div>
       </header>
 
