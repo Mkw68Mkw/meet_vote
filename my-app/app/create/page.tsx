@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,10 +12,18 @@ import { Stepper } from "@/components/stepper"
 import { HeaderAuthControls } from "@/components/header-auth-controls"
 import { Calendar, ArrowLeft, ArrowRight, Plus, X, Copy, Check, ExternalLink } from "lucide-react"
 import { toast } from "sonner"
-import { savePoll, generateId } from "@/lib/storage"
-import type { Poll } from "@/lib/types"
 
 const STEPS = ["Details", "Termine", "Fertig"]
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:5000"
+const TOKEN_KEY = "meetvote_access_token"
+const USERNAME_KEY = "meetvote_username"
+
+type CreatedPoll = {
+  token: string
+  title: string
+  description?: string
+  dates: string[]
+}
 
 export default function CreatePollPage() {
   const router = useRouter()
@@ -23,9 +31,18 @@ export default function CreatePollPage() {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [dates, setDates] = useState<string[]>(["", "", ""])
-  const [createdPoll, setCreatedPoll] = useState<Poll | null>(null)
+  const [createdPoll, setCreatedPoll] = useState<CreatedPoll | null>(null)
   const [copied, setCopied] = useState(false)
+  const [creating, setCreating] = useState(false)
   const [errors, setErrors] = useState<{ title?: string; dates?: string }>({})
+
+  useEffect(() => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) {
+      toast.error("Bitte zuerst einloggen, um eine Umfrage zu erstellen.")
+      router.push("/login")
+    }
+  }, [router])
 
   const addDate = () => {
     if (dates.length < 6) {
@@ -64,11 +81,11 @@ export default function CreatePollPage() {
     return true
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 0 && validateStep1()) {
       setStep(1)
     } else if (step === 1 && validateStep2()) {
-      createPoll()
+      await createPoll()
     }
   }
 
@@ -78,23 +95,60 @@ export default function CreatePollPage() {
     }
   }
 
-  const createPoll = () => {
-    const poll: Poll = {
-      id: generateId(),
-      title: title.trim(),
-      description: description.trim() || undefined,
-      dates: dates.filter((d) => d.trim() !== "").sort(),
-      votes: [],
-      createdAt: new Date().toISOString(),
+  const createPoll = async () => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) {
+      toast.error("Bitte zuerst einloggen.")
+      router.push("/login")
+      return
     }
-    savePoll(poll)
-    setCreatedPoll(poll)
-    setStep(2)
+
+    setCreating(true)
+    try {
+      const response = await fetch(`${API_BASE_URL}/polls`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          dates: dates.filter((d) => d.trim() !== "").sort(),
+        }),
+      })
+
+      if (response.status === 401) {
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(USERNAME_KEY)
+        toast.error("Session abgelaufen. Bitte neu einloggen.")
+        router.push("/login")
+        return
+      }
+
+      const data = await response.json()
+      if (!response.ok) {
+        toast.error(data?.error ?? "Umfrage konnte nicht erstellt werden.")
+        return
+      }
+
+      setCreatedPoll({
+        token: data.token,
+        title: data.title,
+        description: data.description ?? undefined,
+        dates: Array.isArray(data.dates) ? data.dates : [],
+      })
+      setStep(2)
+    } catch {
+      toast.error("Server nicht erreichbar.")
+    } finally {
+      setCreating(false)
+    }
   }
 
   const getPollUrl = () => {
     if (typeof window !== "undefined" && createdPoll) {
-      return `${window.location.origin}/poll/${createdPoll.id}`
+      return `${window.location.origin}/poll/${createdPoll.token}`
     }
     return ""
   }
@@ -221,8 +275,8 @@ export default function CreatePollPage() {
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Zurück
                   </Button>
-                  <Button onClick={handleNext}>
-                    Umfrage erstellen
+                  <Button onClick={handleNext} disabled={creating}>
+                    {creating ? "Erstelle..." : "Umfrage erstellen"}
                     <Check className="w-4 h-4 ml-2" />
                   </Button>
                 </div>
@@ -279,7 +333,7 @@ export default function CreatePollPage() {
 
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
-                    onClick={() => router.push(`/poll/${createdPoll.id}`)}
+                    onClick={() => router.push(`/poll/${createdPoll.token}`)}
                     className="flex-1"
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />

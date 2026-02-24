@@ -9,6 +9,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, jwt_required
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -52,6 +53,8 @@ class Poll(db.Model):
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=True)
     public_token = db.Column(db.String(32), unique=True, nullable=False, index=True)
+    is_closed = db.Column(db.Boolean, nullable=False, default=False)
+    closed_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
 
     dates = db.relationship("PollDate", backref="poll", lazy=True, cascade="all, delete-orphan")
@@ -121,6 +124,8 @@ def serialize_poll_public(poll: Poll) -> dict:
         "description": poll.description,
         "dates": [d.date for d in poll.dates],
         "votes": votes_payload,
+        "isClosed": poll.is_closed,
+        "closedAt": poll.closed_at.isoformat() if poll.closed_at else None,
         "createdAt": poll.created_at.isoformat(),
     }
 
@@ -133,6 +138,8 @@ def serialize_poll_owner(poll: Poll) -> dict:
         "description": poll.description,
         "dates": [d.date for d in poll.dates],
         "voteCount": len(poll.votes),
+        "isClosed": poll.is_closed,
+        "closedAt": poll.closed_at.isoformat() if poll.closed_at else None,
         "createdAt": poll.created_at.isoformat(),
     }
 
@@ -202,6 +209,18 @@ def seed_sample_data() -> None:
         ]
     )
 
+    db.session.commit()
+
+
+def ensure_runtime_schema_updates() -> None:
+    # create_all does not add new columns on existing SQLite tables.
+    poll_columns_result = db.session.execute(text("PRAGMA table_info(polls)")).fetchall()
+    poll_columns = {row[1] for row in poll_columns_result}
+
+    if "is_closed" not in poll_columns:
+        db.session.execute(text("ALTER TABLE polls ADD COLUMN is_closed BOOLEAN NOT NULL DEFAULT 0"))
+    if "closed_at" not in poll_columns:
+        db.session.execute(text("ALTER TABLE polls ADD COLUMN closed_at DATETIME"))
     db.session.commit()
 
 
@@ -338,10 +357,26 @@ def delete_my_poll(poll_id: int):
     return jsonify({"deleted": True}), 200
 
 
+@app.post("/polls/<int:poll_id>/close")
+@jwt_required()
+def close_my_poll(poll_id: int):
+    user_id = int(get_jwt_identity())
+    poll = Poll.query.filter_by(id=poll_id, owner_id=user_id).first()
+    if not poll:
+        return jsonify({"error": "poll not found"}), 404
+    if poll.is_closed:
+        return jsonify({"error": "poll already closed"}), 400
+
+    poll.is_closed = True
+    poll.closed_at = utc_now()
+    db.session.commit()
+    return jsonify(serialize_poll_owner(poll)), 200
+
+
 @app.get("/public/polls/<string:token>")
 def get_public_poll(token: str):
     poll = Poll.query.filter_by(public_token=token).first()
-    if not poll:
+    if not poll or poll.is_closed:
         return jsonify({"error": "poll not found"}), 404
     return jsonify(serialize_poll_public(poll)), 200
 
@@ -349,7 +384,7 @@ def get_public_poll(token: str):
 @app.post("/public/polls/<string:token>/vote")
 def upsert_vote(token: str):
     poll = Poll.query.filter_by(public_token=token).first()
-    if not poll:
+    if not poll or poll.is_closed:
         return jsonify({"error": "poll not found"}), 404
 
     payload = request.get_json(silent=True) or {}
@@ -390,6 +425,7 @@ def upsert_vote(token: str):
 
 with app.app_context():
     db.create_all()
+    ensure_runtime_schema_updates()
     seed_sample_data()
 
 

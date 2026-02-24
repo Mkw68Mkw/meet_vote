@@ -40,6 +40,11 @@ export function HeaderAuthControls() {
 
       {isLoggedIn ? (
         <>
+          <Link href="/dashboard">
+            <Button variant="outline" size="sm">
+              Dashboard
+            </Button>
+          </Link>
           <span className="text-sm text-muted-foreground hidden sm:inline">
             Eingeloggt als <span className="font-medium text-foreground">{username ?? "User"}</span>
           </span>

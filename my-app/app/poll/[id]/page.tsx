@@ -13,9 +13,34 @@ import { VoteToggle } from "@/components/vote-toggle"
 import { HeaderAuthControls } from "@/components/header-auth-controls"
 import { Calendar, Copy, Check, Share2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
-import { getPoll, addVoteToPoll } from "@/lib/storage"
 import { formatDateLong } from "@/lib/date-utils"
 import type { Poll, VoteValue, VoteSelection } from "@/lib/types"
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:5000"
+
+type ApiPoll = {
+  id: number
+  token: string
+  title: string
+  description?: string
+  dates: string[]
+  votes: {
+    name: string
+    selections: VoteSelection[]
+  }[]
+  createdAt: string
+}
+
+function mapApiPollToUiPoll(apiPoll: ApiPoll): Poll {
+  return {
+    id: String(apiPoll.id),
+    title: apiPoll.title,
+    description: apiPoll.description,
+    dates: apiPoll.dates,
+    votes: apiPoll.votes,
+    createdAt: apiPoll.createdAt,
+  }
+}
 
 export default function PollPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -28,12 +53,24 @@ export default function PollPage({ params }: { params: Promise<{ id: string }> }
   const [error, setError] = useState("")
 
   useEffect(() => {
-    const loadPoll = () => {
-      const foundPoll = getPoll(id)
-      setPoll(foundPoll)
-      setLoading(false)
+    const loadPoll = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/public/polls/${id}`)
+        const data = await response.json()
+
+        if (!response.ok) {
+          setPoll(null)
+          return
+        }
+
+        setPoll(mapApiPollToUiPoll(data))
+      } catch {
+        setPoll(null)
+      } finally {
+        setLoading(false)
+      }
     }
-    loadPoll()
+    void loadPoll()
   }, [id])
 
   const updateSelection = (date: string, value: VoteValue) => {
@@ -42,7 +79,7 @@ export default function PollPage({ params }: { params: Promise<{ id: string }> }
     setSelections(newSelections)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
@@ -60,18 +97,32 @@ export default function PollPage({ params }: { params: Promise<{ id: string }> }
       ([date, value]) => ({ date, value })
     )
 
-    const updatedPoll = addVoteToPoll(id, {
-      name: name.trim(),
-      selections: voteSelections,
-    })
+    try {
+      const response = await fetch(`${API_BASE_URL}/public/polls/${id}/vote`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          selections: voteSelections,
+        }),
+      })
 
-    if (updatedPoll) {
-      setPoll(updatedPoll)
+      const data = await response.json()
+      if (!response.ok) {
+        setError(data?.error ?? "Abstimmung fehlgeschlagen")
+        return
+      }
+
+      if (data?.poll) {
+        setPoll(mapApiPollToUiPoll(data.poll))
+      }
       setSubmitted(true)
       setName("")
       setSelections(new Map())
       toast.success("Deine Stimme wurde gespeichert!")
       setTimeout(() => setSubmitted(false), 3000)
+    } catch {
+      setError("Server nicht erreichbar")
     }
   }
 
