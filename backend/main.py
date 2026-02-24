@@ -5,6 +5,7 @@ import secrets
 from datetime import datetime, timezone
 
 import bcrypt
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, get_jwt_identity, jwt_required
@@ -14,11 +15,14 @@ from sqlalchemy import text
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "meet_vote.db")
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{DB_PATH}"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "dev-secret-change-me")
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "")
+if len(app.config["JWT_SECRET_KEY"]) < 32:
+    raise RuntimeError("JWT_SECRET_KEY must be set in backend/.env and be at least 32 chars long.")
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
