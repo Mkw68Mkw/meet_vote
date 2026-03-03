@@ -34,6 +34,7 @@ CORS(
 )
 
 POLL_NOT_FOUND = "poll not found"
+CASCADE_ALL_DELETE_ORPHAN = "all, delete-orphan"
 
 
 def utc_now() -> datetime:
@@ -48,7 +49,7 @@ class User(db.Model):
     password = db.Column(db.String(255), nullable=False)  # Stores bcrypt hash
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
 
-    polls = db.relationship("Poll", backref="owner", lazy=True, cascade="all, delete-orphan")
+    polls = db.relationship("Poll", backref="owner", lazy=True, cascade=CASCADE_ALL_DELETE_ORPHAN)
 
 
 class Poll(db.Model):
@@ -63,8 +64,8 @@ class Poll(db.Model):
     closed_at = db.Column(db.DateTime(timezone=True), nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
 
-    dates = db.relationship("PollDate", backref="poll", lazy=True, cascade="all, delete-orphan")
-    votes = db.relationship("Vote", backref="poll", lazy=True, cascade="all, delete-orphan")
+    dates = db.relationship("PollDate", backref="poll", lazy=True, cascade=CASCADE_ALL_DELETE_ORPHAN)
+    votes = db.relationship("Vote", backref="poll", lazy=True, cascade=CASCADE_ALL_DELETE_ORPHAN)
 
 
 class PollDate(db.Model):
@@ -84,7 +85,7 @@ class Vote(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at = db.Column(db.DateTime(timezone=True), default=utc_now, nullable=False)
 
-    selections = db.relationship("VoteSelection", backref="vote", lazy=True, cascade="all, delete-orphan")
+    selections = db.relationship("VoteSelection", backref="vote", lazy=True, cascade=CASCADE_ALL_DELETE_ORPHAN)
 
     __table_args__ = (db.UniqueConstraint("poll_id", "voter_name", name="uq_vote_poll_voter"),)
 
