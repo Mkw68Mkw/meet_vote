@@ -1,5 +1,7 @@
 # MeetVote
 
+[![Build Frontend](https://github.com/Mkw68Mkw/meet_vote/actions/workflows/frontend_job.yml/badge.svg)](https://github.com/Mkw68Mkw/meet_vote/actions/workflows/frontend_job.yml)
+
 MeetVote ist eine Web-App zur Terminabstimmung:
 
 - **Ersteller** melden sich an, erstellen und verwalten Umfragen.
