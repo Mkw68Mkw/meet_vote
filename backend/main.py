@@ -33,6 +33,8 @@ CORS(
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 )
 
+POLL_NOT_FOUND = "poll not found"
+
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
@@ -320,7 +322,7 @@ def get_my_poll(poll_id: int):
     user_id = int(get_jwt_identity())
     poll = Poll.query.filter_by(id=poll_id, owner_id=user_id).first()
     if not poll:
-        return jsonify({"error": "poll not found"}), 404
+        return jsonify({"error": POLL_NOT_FOUND}), 404
     return jsonify(serialize_poll_public(poll)), 200
 
 
@@ -330,7 +332,7 @@ def update_my_poll(poll_id: int):
     user_id = int(get_jwt_identity())
     poll = Poll.query.filter_by(id=poll_id, owner_id=user_id).first()
     if not poll:
-        return jsonify({"error": "poll not found"}), 404
+        return jsonify({"error": POLL_NOT_FOUND}), 404
 
     payload = request.get_json(silent=True) or {}
     title, description, dates, error = parse_poll_payload(payload)
@@ -354,7 +356,7 @@ def delete_my_poll(poll_id: int):
     user_id = int(get_jwt_identity())
     poll = Poll.query.filter_by(id=poll_id, owner_id=user_id).first()
     if not poll:
-        return jsonify({"error": "poll not found"}), 404
+        return jsonify({"error": POLL_NOT_FOUND}), 404
 
     db.session.delete(poll)
     db.session.commit()
@@ -367,7 +369,7 @@ def close_my_poll(poll_id: int):
     user_id = int(get_jwt_identity())
     poll = Poll.query.filter_by(id=poll_id, owner_id=user_id).first()
     if not poll:
-        return jsonify({"error": "poll not found"}), 404
+        return jsonify({"error": POLL_NOT_FOUND}), 404
     if poll.is_closed:
         return jsonify({"error": "poll already closed"}), 400
 
@@ -381,7 +383,7 @@ def close_my_poll(poll_id: int):
 def get_public_poll(token: str):
     poll = Poll.query.filter_by(public_token=token).first()
     if not poll or poll.is_closed:
-        return jsonify({"error": "poll not found"}), 404
+        return jsonify({"error": POLL_NOT_FOUND}), 404
     return jsonify(serialize_poll_public(poll)), 200
 
 
@@ -389,7 +391,7 @@ def get_public_poll(token: str):
 def upsert_vote(token: str):
     poll = Poll.query.filter_by(public_token=token).first()
     if not poll or poll.is_closed:
-        return jsonify({"error": "poll not found"}), 404
+        return jsonify({"error": POLL_NOT_FOUND}), 404
 
     payload = request.get_json(silent=True) or {}
     voter_name = (payload.get("name") or "").strip()
