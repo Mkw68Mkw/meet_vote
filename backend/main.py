@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from dotenv import load_dotenv
@@ -23,9 +23,18 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "")
 if len(app.config["JWT_SECRET_KEY"]) < 32:
     raise RuntimeError("JWT_SECRET_KEY must be set in backend/.env and be at least 32 chars long.")
+access_token_expiry_minutes = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRES_MINUTES", "10"))
+if access_token_expiry_minutes <= 0:
+    raise RuntimeError("JWT_ACCESS_TOKEN_EXPIRES_MINUTES must be a positive integer.")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=access_token_expiry_minutes)
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
+
+
+@jwt.expired_token_loader
+def expired_token_callback(jwt_header, jwt_payload):  # noqa: ANN001
+    return jsonify({"error": "token expired"}), 401
 CORS(
     app,
     resources={r"/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}},

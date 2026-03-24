@@ -36,11 +36,17 @@ export default function CreatePollPage() {
   const [creating, setCreating] = useState(false)
   const [errors, setErrors] = useState<{ title?: string; dates?: string }>({})
 
+  const redirectToLogin = (message: string) => {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USERNAME_KEY)
+    toast.error(message)
+    router.push("/login")
+  }
+
   useEffect(() => {
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) {
-      toast.error("Bitte zuerst einloggen, um eine Umfrage zu erstellen.")
-      router.push("/login")
+      redirectToLogin("Bitte anmelden, um eine Umfrage zu erstellen.")
     }
   }, [router])
 
@@ -98,8 +104,7 @@ export default function CreatePollPage() {
   const createPoll = async () => {
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) {
-      toast.error("Bitte zuerst einloggen.")
-      router.push("/login")
+      redirectToLogin("Bitte anmelden, um eine Umfrage zu erstellen.")
       return
     }
 
@@ -119,10 +124,7 @@ export default function CreatePollPage() {
       })
 
       if (response.status === 401) {
-        localStorage.removeItem(TOKEN_KEY)
-        localStorage.removeItem(USERNAME_KEY)
-        toast.error("Session abgelaufen. Bitte neu einloggen.")
-        router.push("/login")
+        redirectToLogin("Session abgelaufen, loggen Sie sich nochmals ein.")
         return
       }
 

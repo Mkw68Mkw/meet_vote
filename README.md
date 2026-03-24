@@ -67,6 +67,7 @@ Backend läuft danach auf:
 Hinweis:
 - Beim Start werden Tabellen automatisch erstellt.
 - Eine Sample-Seed-Logik ist aktiv (Demo-Daten, falls noch nicht vorhanden).
+- Session-Laufzeit kann per `JWT_ACCESS_TOKEN_EXPIRES_MINUTES` (Standard: `5`) in `backend/.env` gesteuert werden.
 
 ---
 

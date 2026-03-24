@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
+from flask_jwt_extended import create_access_token
+
 from tests.doubles import PollPayloadDouble, UserCredentialsDouble, VotePayloadDouble
 
 
@@ -28,6 +32,19 @@ def test_register_login_and_me_integration(client):
     payload = me_response.get_json()
     assert payload["username"] == credentials.username
     assert isinstance(payload["id"], int)
+
+
+def test_me_rejects_expired_access_token_integration(client):
+    from main import app
+
+    credentials, _token = _register_and_login(client)
+    with app.app_context():
+        expired_token = create_access_token(identity=credentials.username, expires_delta=timedelta(seconds=-1))
+
+    me_response = client.get("/auth/me", headers=_auth_headers(expired_token))
+
+    assert me_response.status_code == 401
+    assert me_response.get_json()["error"] == "token expired"
 
 
 def test_owner_create_and_list_poll_integration(client):

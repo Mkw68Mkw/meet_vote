@@ -78,11 +78,17 @@ export default function DashboardPage() {
   const [pendingAction, setPendingAction] = useState<PendingAction>(null)
   const [loading, setLoading] = useState(true)
 
+  const redirectToLogin = (message: string) => {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USERNAME_KEY)
+    toast.error(message)
+    router.push("/login")
+  }
+
   const closePoll = async (pollId: number) => {
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) {
-      toast.error("Bitte zuerst einloggen.")
-      router.push("/login")
+      redirectToLogin("Bitte anmelden, um fortzufahren.")
       return
     }
 
@@ -101,6 +107,10 @@ export default function DashboardPage() {
 
       const data = await response.json()
       if (!response.ok) {
+        if (response.status === 401) {
+          redirectToLogin("Session abgelaufen, loggen Sie sich nochmals ein.")
+          return
+        }
         toast.error(data?.error ?? "Umfrage konnte nicht geschlossen werden.")
         return
       }
@@ -126,8 +136,7 @@ export default function DashboardPage() {
   const deletePoll = async (pollId: number) => {
     const token = localStorage.getItem(TOKEN_KEY)
     if (!token) {
-      toast.error("Bitte zuerst einloggen.")
-      router.push("/login")
+      redirectToLogin("Bitte anmelden, um fortzufahren.")
       return
     }
 
@@ -146,6 +155,10 @@ export default function DashboardPage() {
 
       const data = await response.json()
       if (!response.ok) {
+        if (response.status === 401) {
+          redirectToLogin("Session abgelaufen, loggen Sie sich nochmals ein.")
+          return
+        }
         toast.error(data?.error ?? "Umfrage konnte nicht gelöscht werden.")
         return
       }
@@ -175,8 +188,7 @@ export default function DashboardPage() {
     const loadPolls = async () => {
       const token = localStorage.getItem(TOKEN_KEY)
       if (!token) {
-        toast.error("Bitte zuerst einloggen.")
-        router.push("/login")
+        redirectToLogin("Bitte anmelden, um fortzufahren.")
         return
       }
 
@@ -188,10 +200,7 @@ export default function DashboardPage() {
         })
 
         if (response.status === 401) {
-          localStorage.removeItem(TOKEN_KEY)
-          localStorage.removeItem(USERNAME_KEY)
-          toast.error("Session abgelaufen. Bitte neu einloggen.")
-          router.push("/login")
+          redirectToLogin("Session abgelaufen, loggen Sie sich nochmals ein.")
           return
         }
 
@@ -220,10 +229,7 @@ export default function DashboardPage() {
         )
 
         if (detailResponses.some((res) => res.status === 401)) {
-          localStorage.removeItem(TOKEN_KEY)
-          localStorage.removeItem(USERNAME_KEY)
-          toast.error("Session abgelaufen. Bitte neu einloggen.")
-          router.push("/login")
+          redirectToLogin("Session abgelaufen, loggen Sie sich nochmals ein.")
           return
         }
 
