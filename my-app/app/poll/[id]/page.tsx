@@ -13,10 +13,9 @@ import { VoteToggle } from "@/components/vote-toggle"
 import { HeaderAuthControls } from "@/components/header-auth-controls"
 import { Calendar, Copy, Check, Share2, AlertCircle } from "lucide-react"
 import { toast } from "sonner"
+import { API_BASE_URL } from "@/lib/api"
 import { formatDateLong } from "@/lib/date-utils"
 import type { Poll, VoteValue, VoteSelection } from "@/lib/types"
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:5000"
 
 type ApiPoll = {
   id: number

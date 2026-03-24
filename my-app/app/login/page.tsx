@@ -11,8 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { HeaderAuthControls } from "@/components/header-auth-controls"
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:5000"
+import { API_BASE_URL } from "@/lib/api"
 
 export default function LoginPage() {
   const router = useRouter()

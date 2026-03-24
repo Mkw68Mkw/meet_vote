@@ -10,11 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Stepper } from "@/components/stepper"
 import { HeaderAuthControls } from "@/components/header-auth-controls"
+import { API_BASE_URL } from "@/lib/api"
 import { Calendar, ArrowLeft, ArrowRight, Plus, X, Copy, Check, ExternalLink } from "lucide-react"
 import { toast } from "sonner"
 
 const STEPS = ["Details", "Termine", "Fertig"]
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:5000"
 const TOKEN_KEY = "meetvote_access_token"
 const USERNAME_KEY = "meetvote_username"
 

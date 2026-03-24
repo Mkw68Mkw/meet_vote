@@ -10,9 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { HeaderAuthControls } from "@/components/header-auth-controls"
 import { VoteTable } from "@/components/vote-table"
+import { API_BASE_URL } from "@/lib/api"
 import type { Poll } from "@/lib/types"
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:5000"
 const TOKEN_KEY = "meetvote_access_token"
 const USERNAME_KEY = "meetvote_username"
 
