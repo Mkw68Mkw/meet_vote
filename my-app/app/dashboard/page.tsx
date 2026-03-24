@@ -152,7 +152,7 @@ export default function DashboardPage() {
       }
 
       setCards((prev) => prev.filter((item) => item.poll.id !== String(pollId)))
-      toast.error("Umfrage wurde gelöscht.")
+      toast.success("Umfrage wurde gelöscht.")
     } catch {
       toast.error("Server nicht erreichbar.")
     } finally {
