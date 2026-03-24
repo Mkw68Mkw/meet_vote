@@ -17,6 +17,16 @@ pipeline {
             }
         }
 
+        stage('Backend Integration Tests') {
+            steps {
+                sh """
+                    python3 -m pip install --upgrade pip
+                    python3 -m pip install -r backend/requirements.txt
+                    python3 -m pytest backend/tests -q
+                """
+            }
+        }
+
         stage('SonarQube Analysis') {
             steps {
                 sh """
