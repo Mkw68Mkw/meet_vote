@@ -46,6 +46,30 @@ def test_owner_create_and_list_poll_integration(client):
     assert created_poll["isClosed"] is False
 
 
+def test_create_poll_accepts_iso_dates_integration(client):
+    _credentials, token = _register_and_login(client)
+    poll_payload = PollPayloadDouble.valid()
+    poll_payload["dates"] = ["2026-06-01", "2026-06-02", "2026-06-03"]
+
+    create_response = client.post("/polls", json=poll_payload, headers=_auth_headers(token))
+
+    assert create_response.status_code == 201
+    payload = create_response.get_json()
+    assert payload["dates"] == ["2026-06-01", "2026-06-02", "2026-06-03"]
+
+
+def test_create_poll_rejects_non_iso_dates_integration(client):
+    _credentials, token = _register_and_login(client)
+    poll_payload = PollPayloadDouble.valid()
+    poll_payload["dates"] = ["06/01/2026", "2026-06-02", "2026-06-03"]
+
+    create_response = client.post("/polls", json=poll_payload, headers=_auth_headers(token))
+
+    assert create_response.status_code == 400
+    payload = create_response.get_json()
+    assert payload["error"] == "dates must use ISO format YYYY-MM-DD"
+
+
 def test_public_vote_and_close_poll_integration(client):
     _credentials, token = _register_and_login(client)
     poll_payload = PollPayloadDouble.valid()

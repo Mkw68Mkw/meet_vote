@@ -166,8 +166,18 @@ def parse_poll_payload(payload: dict) -> tuple[str, str | None, list[str], str |
         return "", None, [], "title is required"
     if len(normalized_dates) < 3:
         return "", None, [], "at least 3 dates are required"
+    if any(not is_iso_date(date_value) for date_value in normalized_dates):
+        return "", None, [], "dates must use ISO format YYYY-MM-DD"
 
     return title, description, normalized_dates, None
+
+
+def is_iso_date(value: str) -> bool:
+    try:
+        parsed = datetime.strptime(value, "%Y-%m-%d")
+    except ValueError:
+        return False
+    return parsed.strftime("%Y-%m-%d") == value
 
 
 def seed_sample_data() -> None:
