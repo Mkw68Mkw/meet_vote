@@ -49,28 +49,6 @@ Das Projekt besteht aus:
 
 ---
 
-## Projektstruktur
-
-```text
-meet_vote/
-├─ backend/
-│  └─ main.py
-├─ my-app/
-│  ├─ app/
-│  │  ├─ create/page.tsx
-│  │  ├─ dashboard/page.tsx
-│  │  ├─ login/page.tsx
-│  │  ├─ signup/page.tsx
-│  │  └─ poll/[id]/page.tsx
-│  ├─ components/
-│  │  ├─ header-auth-controls.tsx
-│  │  └─ vote-table.tsx
-│  └─ package.json
-└─ README.md
-```
-
----
-
 ## Setup & Start
 
 ## 1) Backend starten
