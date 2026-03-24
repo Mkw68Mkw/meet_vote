@@ -61,7 +61,6 @@ export default function SignupPage() {
 
       localStorage.setItem("meetvote_access_token", loginData.access_token)
       localStorage.setItem("meetvote_username", loginData.user?.username ?? username.trim())
-      console.log("Logged in user:", loginData.user)
       toast.success("Registrierung erfolgreich.")
       router.push("/")
     } catch {

@@ -46,7 +46,6 @@ export default function LoginPage() {
 
       localStorage.setItem("meetvote_access_token", data.access_token)
       localStorage.setItem("meetvote_username", data.user?.username ?? username.trim())
-      console.log("Logged in user:", data.user)
       toast.success("Login erfolgreich.")
       router.push("/")
     } catch {
