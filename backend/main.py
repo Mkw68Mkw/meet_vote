@@ -28,6 +28,15 @@ if access_token_expiry_minutes <= 0:
     raise RuntimeError("JWT_ACCESS_TOKEN_EXPIRES_MINUTES must be a positive integer.")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=access_token_expiry_minutes)
 
+# Schulprojekt: alle Origins erlauben (Frontend localhost:3000, API Standard :5001, siehe PORT).
+# Preflight (OPTIONS) muss 2xx liefern; globale CORS-Registrierung ohne resources-Pattern.
+CORS(
+    app,
+    origins="*",
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+)
+
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
@@ -35,12 +44,6 @@ jwt = JWTManager(app)
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):  # noqa: ANN001
     return jsonify({"error": "token expired"}), 401
-CORS(
-    app,
-    resources={r"/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}},
-    allow_headers=["Content-Type", "Authorization"],
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-)
 
 POLL_NOT_FOUND = "poll not found"
 CASCADE_ALL_DELETE_ORPHAN = "all, delete-orphan"
@@ -250,6 +253,11 @@ def ensure_runtime_schema_updates() -> None:
     db.session.commit()
 
 
+@app.get("/")
+def root() -> tuple[dict, int]:
+    return {"app": "meetvote", "ok": True}, 200
+
+
 @app.get("/health")
 def health() -> tuple[dict, int]:
     return {"ok": True}, 200
@@ -456,4 +464,6 @@ with app.app_context():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    # Standard 5001: Port 5000 ist oft schon belegt (z. B. anderes Flask-Projekt). PORT in .env überschreibbar.
+    _port = int(os.getenv("PORT", "5001"))
+    app.run(debug=True, host="127.0.0.1", port=_port)
